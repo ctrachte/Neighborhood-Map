@@ -1,7 +1,7 @@
 # Neighborhood Map
 A single-page web application, built with React, that displays a Google Map of Cabot Arkansas, and suggested places to visit. Users can filter suggested locations and when selected, additional information is presented from the FourSquare API.
 
-** Note: the production version is available [here] but may not display all information since the access tokens I provided may have hit their limit as a free user (Google API and FourSquare)
+*Note: the production version is linked below but may not display all information since the access tokens I provided may have hit their limit as a free user (Google API and FourSquare)*
 
 Check out the live demo [here](https://ctrachte.github.io/Neighborhood-Map/)!
 
