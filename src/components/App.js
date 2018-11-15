@@ -117,7 +117,7 @@ class App extends Component {
         let self = this;
         const clientId = "client_id=2WN2LW0H3PTZ5ANP5B2P1ZPF0JIDBWZNPHXPBDZIRPJVGPJQ";
         const clientSecret = "&client_secret=GZNVTNU3MJ0MTEXZD1G14QZA4R4IAB3FH5MLL21MLIBULV5J";
-        const version = "&v=20130815";
+        const version = "&v=20181115";
         // we only want one result
         const limit = "&limit=1";
 
