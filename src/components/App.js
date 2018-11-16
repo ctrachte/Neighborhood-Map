@@ -1,6 +1,5 @@
 import React, {Component} from 'react';
 import Menu from './Menu';
-import * as mapHelper from '../utils/mapHelper';
 import * as dataHelper from '../utils/dataHelper';
 
 class App extends Component {
@@ -19,21 +18,14 @@ class App extends Component {
         this.openInfoWindow = this.openInfoWindow.bind(this);
         this.minimizeMarker = this.minimizeMarker.bind(this);
     }
-
     componentWillMount() {
       // get places from data API before component mounts
       this.setState({
         'cabotPlaces': dataHelper.getPlaces()
       });
     }
-
     componentDidMount() {
       window.initMap = this.initMap;
-      // Asynchronously load Google Maps
-      const mapsKey = 'AIzaSyAePOTf0XVIBUytjxUa0Pg0QSU7Jp23LiI';
-      const mapsCallback = 'initMap';
-      const mapsURL = 'https://maps.googleapis.com/maps/api/js?key=' + mapsKey + '&callback=' + mapsCallback;
-      mapHelper.createMap(mapsURL);
     }
     // most of this init function is based on the Udacity google maps API course example
     initMap() {
@@ -68,28 +60,7 @@ class App extends Component {
         window.google.maps.event.addListener(map, 'click', function () {
             self.minimizeMarker();
         });
-        // for each location in our cabotPlaces array, drop (animate) a pin
-        let cabotPlaces = [];
-        this.state.cabotPlaces.forEach(function (location) {
-            let fullName = location.name + ' - ' + location.description;
-            let marker = new window.google.maps.Marker({
-                position: new window.google.maps.LatLng(location.latitude, location.longitude),
-                animation: window.google.maps.Animation.DROP,
-                map: map
-            });
-            // have the pin listen for clicks, and open the info marker window
-            marker.addListener('click', function () {
-                self.openInfoWindow(marker);
-            });
-            // add properties to our location object
-            location.fullName = fullName;
-            location.marker = marker;
-            location.display = true;
-            cabotPlaces.push(location);
-        });
-        this.setState({
-            'cabotPlaces': cabotPlaces
-        });
+        self.getLocationInfo();
     }
 
     openInfoWindow(marker) {
@@ -111,43 +82,89 @@ class App extends Component {
         // now show the marker info
         this.displayMarker(marker);
     }
+    // get additional info for each location based on API information
+    getLocationInfo () {
+      const clientId = "client_id=2WN2LW0H3PTZ5ANP5B2P1ZPF0JIDBWZNPHXPBDZIRPJVGPJQ";
+      const clientSecret = "&client_secret=GZNVTNU3MJ0MTEXZD1G14QZA4R4IAB3FH5MLL21MLIBULV5J";
+      const version = "&v=20181115";
+      const limit = "&limit=1";
+      let newLocationsInfo = [];
+      this.state.cabotPlaces.forEach((place) => {
+        let fullName = place.name + ' - ' + place.description;
+        let marker = new window.google.maps.Marker({
+          animation: window.google.maps.Animation.DROP,
+          position: new window.google.maps.LatLng(place.latitude, place.longitude),
+          map: this.state.map
+        });
+        marker.addListener('click', function () {
+            this.openInfoWindow(marker);
+        });
+        place.fullName = fullName;
+        place.marker = marker;
+        place.display = true;
+        let lat = place.latitude;
+        let long = place.longitude;
+        let url = "https://api.foursquare.com/v2/venues/search?" + clientId + clientSecret + version + "&ll=" + lat + "," + long + limit;
+        fetch(url).then((res) => {
+          if (res.status !== 200) {
+            place.id = false;
+            newLocationsInfo.push(place);
+          } else {
+            res.json().then((data) => {
+              place.id = data.response.venues[0].id;
+              newLocationsInfo.push(place);
+            })
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+          place.id = false;
+          newLocationsInfo.push(place);
+        });
+      });
+      this.setState({
+        cabotPlaces: newLocationsInfo
+      });
+    }
+
 
     displayMarker(marker) {
       //set the marker, and url to request info
-        let self = this;
-        const clientId = "client_id=2WN2LW0H3PTZ5ANP5B2P1ZPF0JIDBWZNPHXPBDZIRPJVGPJQ";
-        const clientSecret = "&client_secret=GZNVTNU3MJ0MTEXZD1G14QZA4R4IAB3FH5MLL21MLIBULV5J";
-        const version = "&v=20181115";
+        // let self = this;
+        console.log('displaymarker called', marker)
+        // const clientId = "client_id=2WN2LW0H3PTZ5ANP5B2P1ZPF0JIDBWZNPHXPBDZIRPJVGPJQ";
+        // const clientSecret = "&client_secret=GZNVTNU3MJ0MTEXZD1G14QZA4R4IAB3FH5MLL21MLIBULV5J";
+        // const version = "&v=20181115";
         // we only want one result
-        const limit = "&limit=1";
-
-        let lat = marker.getPosition().lat();
-        let long = marker.getPosition().lng();
-        // get marker information from FourSqure API
-        let url = "https://api.foursquare.com/v2/venues/search?" + clientId + clientSecret + version + "&ll=" + lat + "," + long + limit;
-        // TODO: move this fetch call to component life cycle event, to avoid reloading information
-        fetch(url)
-            .then(
-                function (res) {
-                    if (res.status !== 200) {
-                        self.state.infowindow.setContent("We were unable to retrieve this locations info!");
-                        return;
-                    }
-                    res.json().then(function (data) {
-                        let locationInfo = data.response.venues[0];
-                        let heading = '<h2 class="location-text">' + locationInfo.name + '</h2>';
-                        let category = '<span class="location-text">' + locationInfo.categories[0].name + '</span><hr/>';
-                        let checkinsCount = '<b>Number of Check-Ins: </b>' + locationInfo.stats.checkinsCount + '<br>';
-                        let usersCount = '<b>Total Visitors: </b>' + locationInfo.stats.usersCount + '<br>';
-                        let hereNow = '<b>Current Visitors: </b>' + locationInfo.hereNow.summary + '<hr/>';
-                        let fourSquareLink = '<a href="https://foursquare.com/v/'+ locationInfo.id +'" target="_blank">Check it out on FourSquare!</a> '
-                        self.state.infowindow.setContent(heading + category + checkinsCount + usersCount + hereNow + fourSquareLink);
-                    });
-                }
-            )
-            .catch(function (err) {
-              self.state.infowindow.setContent("We were unable to retrieve this locations info!");
-            });
+        // const limit = "&limit=1";
+        //
+        // let lat = marker.getPosition().lat();
+        // let long = marker.getPosition().lng();
+        // // get marker information from FourSqure API
+        // let url = "https://api.foursquare.com/v2/venues/search?" + clientId + clientSecret + version + "&ll=" + lat + "," + long + limit;
+        // fetch(url)
+        //     .then(
+        //         function (res) {
+        //             if (res.status !== 200) {
+        //                 self.state.infowindow.setContent("We were unable to retrieve this locations info!");
+        //                 return;
+        //             }
+        //             res.json().then(function (data) {
+        //               console.log(data)
+        //                 let locationInfo = data.response.venues[0];
+        //                 let heading = '<h2 class="location-text">' + locationInfo.name + '</h2>';
+        //                 let category = '<span class="location-text">' + locationInfo.categories[0].name + '</span><hr/>';
+        //                 let checkinsCount = '<b>Number of Check-Ins: </b>' + locationInfo.stats.checkinsCount + '<br>';
+        //                 let usersCount = '<b>Total Visitors: </b>' + locationInfo.stats.usersCount + '<br>';
+        //                 let hereNow = '<b>Current Visitors: </b>' + locationInfo.hereNow.summary + '<hr/>';
+        //                 let fourSquareLink = '<a href="https://foursquare.com/v/'+ locationInfo.id +'" target="_blank">Check it out on FourSquare!</a> '
+        //                 self.state.infowindow.setContent(heading + category + checkinsCount + usersCount + hereNow + fourSquareLink);
+        //             });
+        //         }
+        //     )
+        //     .catch(function (err) {
+        //       self.state.infowindow.setContent("We were unable to retrieve this locations info!");
+        //     });
     }
 
     minimizeMarker() {
