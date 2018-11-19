@@ -2,6 +2,10 @@ import React, {Component} from 'react';
 import Menu from './Menu';
 import * as dataHelper from '../utils/dataHelper';
 
+const fourSquareClientId = "&client_id=2WN2LW0H3PTZ5ANP5B2P1ZPF0JIDBWZNPHXPBDZIRPJVGPJQ";
+const fourSquareClientSecret = "&client_secret=TQNTS32NRFWBI4WLBB5CMZX4C2VOVX4PNN3BYC3ZSKS2LVAA";
+const fourSquareVersion = "&v=20181115";
+
 class App extends Component {
 
     constructor(props) {
@@ -60,7 +64,7 @@ class App extends Component {
         window.google.maps.event.addListener(map, 'click', function () {
             self.minimizeMarker();
         });
-        self.getLocationInfo();
+        this.getLocationInfo();
     }
 
     openInfoWindow(marker) {
@@ -84,9 +88,7 @@ class App extends Component {
     }
     // get additional info for each location based on API information
     getLocationInfo () {
-      const clientId = "client_id=2WN2LW0H3PTZ5ANP5B2P1ZPF0JIDBWZNPHXPBDZIRPJVGPJQ";
-      const clientSecret = "&client_secret=GZNVTNU3MJ0MTEXZD1G14QZA4R4IAB3FH5MLL21MLIBULV5J";
-      const version = "&v=20181115";
+      let self = this;
       const limit = "&limit=1";
       let newLocationsInfo = [];
       this.state.cabotPlaces.forEach((place) => {
@@ -97,28 +99,29 @@ class App extends Component {
           map: this.state.map
         });
         marker.addListener('click', function () {
-            this.openInfoWindow(marker);
+            self.openInfoWindow(marker);
         });
         place.fullName = fullName;
         place.marker = marker;
+        place.marker.id = place.id;
         place.display = true;
         let lat = place.latitude;
         let long = place.longitude;
-        let url = "https://api.foursquare.com/v2/venues/search?" + clientId + clientSecret + version + "&ll=" + lat + "," + long + limit;
+        let url = "https://api.foursquare.com/v2/venues/search?" + fourSquareClientId + fourSquareClientSecret + fourSquareVersion + "&ll=" + lat + "," + long + limit;
         fetch(url).then((res) => {
           if (res.status !== 200) {
-            place.id = false;
+            place.getDetailsError = res.status;
             newLocationsInfo.push(place);
           } else {
             res.json().then((data) => {
               place.id = data.response.venues[0].id;
-              newLocationsInfo.push(place);
+              this.setVenueDetails(place, newLocationsInfo);
             })
           }
         })
         .catch((err) => {
           console.log(err);
-          place.id = false;
+          place.getDetailsError = err;
           newLocationsInfo.push(place);
         });
       });
@@ -127,44 +130,47 @@ class App extends Component {
       });
     }
 
+    setVenueDetails (place, newLocationsInfo) {
+      let url = 'https://api.foursquare.com/v2/venues/' + place.id + '?' + fourSquareClientId + fourSquareClientSecret + fourSquareVersion;
+        fetch(url).then((res) => {
+          if (res.status !== 200) {
+            place.getDetailsError = res.status;
+            newLocationsInfo.push(place);
+          } else {
+            res.json().then((data) => {
+              console.log(place.name, data);
+              data = data.response.venue;
+              place.img = data.bestPhoto.source.prefix + data.bestPhoto.source.suffix;
+              place.hereNow = data.hereNow.summary;
+              place.rating = data.likes.summary + ", " + data.rating + " stars.";
+              place.url = data.shortUrl;
+              newLocationsInfo.push(place);
+            })
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+          place.getDetailsError = err;
+          newLocationsInfo.push(place);
+        });
+    }
+
 
     displayMarker(marker) {
       //set the marker, and url to request info
-        // let self = this;
-        console.log('displaymarker called', marker)
-        // const clientId = "client_id=2WN2LW0H3PTZ5ANP5B2P1ZPF0JIDBWZNPHXPBDZIRPJVGPJQ";
-        // const clientSecret = "&client_secret=GZNVTNU3MJ0MTEXZD1G14QZA4R4IAB3FH5MLL21MLIBULV5J";
-        // const version = "&v=20181115";
-        // we only want one result
-        // const limit = "&limit=1";
-        //
-        // let lat = marker.getPosition().lat();
-        // let long = marker.getPosition().lng();
-        // // get marker information from FourSqure API
-        // let url = "https://api.foursquare.com/v2/venues/search?" + clientId + clientSecret + version + "&ll=" + lat + "," + long + limit;
-        // fetch(url)
-        //     .then(
-        //         function (res) {
-        //             if (res.status !== 200) {
-        //                 self.state.infowindow.setContent("We were unable to retrieve this locations info!");
-        //                 return;
-        //             }
-        //             res.json().then(function (data) {
-        //               console.log(data)
-        //                 let locationInfo = data.response.venues[0];
-        //                 let heading = '<h2 class="location-text">' + locationInfo.name + '</h2>';
-        //                 let category = '<span class="location-text">' + locationInfo.categories[0].name + '</span><hr/>';
-        //                 let checkinsCount = '<b>Number of Check-Ins: </b>' + locationInfo.stats.checkinsCount + '<br>';
-        //                 let usersCount = '<b>Total Visitors: </b>' + locationInfo.stats.usersCount + '<br>';
-        //                 let hereNow = '<b>Current Visitors: </b>' + locationInfo.hereNow.summary + '<hr/>';
-        //                 let fourSquareLink = '<a href="https://foursquare.com/v/'+ locationInfo.id +'" target="_blank">Check it out on FourSquare!</a> '
-        //                 self.state.infowindow.setContent(heading + category + checkinsCount + usersCount + hereNow + fourSquareLink);
-        //             });
-        //         }
-        //     )
-        //     .catch(function (err) {
-        //       self.state.infowindow.setContent("We were unable to retrieve this locations info!");
-        //     });
+      let self = this;
+      let locationInfo = this.state.cabotPlaces.filter(place => place.id === marker.id);
+      if (!locationInfo.getIdError && marker.id){
+        let heading = '<h2 class="location-text">' + locationInfo.name + '</h2>';
+        let rating = '<span class="location-text">' + locationInfo.rating + '</span><hr/>';
+        let img = '<img src="' + locationInfo.img + '" width=100 alt="' + locationInfo.name + 'picture" /><br>';
+        let hereNow = '<b>Current Visitors: </b>' + locationInfo.hereNow + '<hr/>';
+        let fourSquareLink = '<a href="https://foursquare.com/v/'+ locationInfo.url +'" target="_blank">Check it out on FourSquare!</a> '
+        self.state.infowindow.setContent(heading + rating + hereNow + img + fourSquareLink);
+      } else {
+        self.state.infowindow.setContent("We were unable to retrieve details of this location.");
+      }
+
     }
 
     minimizeMarker() {

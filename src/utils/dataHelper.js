@@ -1,5 +1,4 @@
 export function getPlaces () {
-  console.log('called')
   return [
     {
         'name': "The Purple Onion",
