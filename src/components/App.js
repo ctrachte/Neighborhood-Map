@@ -22,7 +22,7 @@ class App extends Component {
 
     // keep context when invoking functions
     this.initMap = this.initMap.bind(this);
-    this.openMarker = this.openMarker.bind(this);
+    this.openmarker = this.openmarker.bind(this);
     this.minimizeMarker = this.minimizeMarker.bind(this);
   }
   componentWillMount() {
@@ -45,45 +45,24 @@ class App extends Component {
       center: {lat: 34.963541, lng: -92.022440} // the center of Cabot, Ar
     });
     // make the map responsive if screen size changes
-    window.google.maps.event.addDomListener(window, "resize", function () {
-      let center = map.getCenter();
+    window.google.maps.event.addDomListener(window, "resize", () => {
       window.google.maps.event.trigger(map, "resize");
-      self.state.map.setCenter(center);
+      self.state.map.setCenter(map.getCenter());
     });
     // if the user clicks somewhere on the map, close the info marker
-    window.google.maps.event.addListener(map, 'click', function () {
+    window.google.maps.event.addListener(map, 'click', () => {
       self.minimizeMarker();
     });
-    let InfoWindow = new window.google.maps.InfoWindow({});
+    let markerWindow = new window.google.maps.InfoWindow({});
     //if the user clicks the "x" on the marker:
-    window.google.maps.event.addListener(InfoWindow, 'closeclick', function () {
+    window.google.maps.event.addListener(markerWindow, 'closeclick', () => {
       self.minimizeMarker();
     });
     this.setState({
       'map': map,
-      'currentMarker': InfoWindow
+      'currentMarker': markerWindow
     });
     this.getAllLocationsInfo();
-  }
-
-  openMarker(marker) {
-    //close any existing markers
-    this.minimizeMarker();
-    //animate the icon of the marker
-    marker.setAnimation(window.google.maps.Animation.BOUNCE);
-    this.setState({
-        'previousMarker': marker
-    });
-    //while waiting for response from displayMarker:
-    this.state.currentMarker.setContent('Loading SquareSpace Data...');
-    //center the map over the selected icon
-    this.state.map.setCenter(marker.getPosition());
-    //offset the screen so the menu doesnt hide the marker
-    this.state.map.panBy(0, -230);
-    // now show the marker info
-    this.displayMarker(marker);
-    //open the marker window on the map
-    this.state.currentMarker.open(this.state.map, marker);
   }
   // get additional info for each location based on API information
   getAllLocationsInfo () {
@@ -106,6 +85,7 @@ class App extends Component {
           res.json().then((data) => {
             //Set the place Ids
             place.id = data.response.venues[0].id;
+            // add a marker with a unique Id to the location
             let marker = new window.google.maps.Marker({
               animation: window.google.maps.Animation.DROP,
               position: new window.google.maps.LatLng(place.latitude, place.longitude),
@@ -113,7 +93,7 @@ class App extends Component {
               id:data.response.venues[0].id
             });
             marker.addListener('click', function () {
-                self.openMarker(marker);
+              self.openmarker(marker);
             });
             place.marker = marker;
             // now that we have the unique id, get detailed info about this location
@@ -159,8 +139,25 @@ class App extends Component {
         newLocationsInfo.push(place);
       });
   }
-
-
+  openmarker(marker) {
+    //close any existing markers
+    this.minimizeMarker();
+    //animate the icon of the marker
+    marker.setAnimation(window.google.maps.Animation.BOUNCE);
+    this.setState({
+        'previousMarker': marker
+    });
+    //while waiting for response from displayMarker:
+    this.state.currentMarker.setContent('Loading SquareSpace Data...');
+    //center the map over the selected icon
+    this.state.map.setCenter(marker.getPosition());
+    //offset the screen so the menu doesnt hide the marker
+    this.state.map.panBy(0, -230);
+    // now show the marker info
+    this.displayMarker(marker);
+    //open the marker window on the map
+    this.state.currentMarker.open(this.state.map, marker);
+  }
   displayMarker(marker) {
     let self = this;
     let locationInfo = [];
@@ -204,7 +201,7 @@ class App extends Component {
         <Menu
           key="100"
           cabotPlaces={this.state.cabotPlaces}
-          openMarker={this.openMarker}
+          openmarker={this.openmarker}
           minimizeMarker={this.minimizeMarker}
         />
         <div id="map" aria-labelledby="Map"></div>

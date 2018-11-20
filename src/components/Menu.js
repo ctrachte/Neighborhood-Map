@@ -48,13 +48,13 @@ class Menu extends Component {
         let locationlist = this.state.cabotPlaces.map((listItem, index) => {
             return (
                 <li
-                  openMarker={this.props.openMarker.bind(this)}
+                  openmarker={this.props.openmarker.bind(this)}
                   key={index}
                   role="button"
                   className="box"
                   tabIndex="0"
-                  onKeyPress={this.props.openMarker.bind(this, listItem.marker)}
-                  onClick={this.props.openMarker.bind(this, listItem.marker)}
+                  onKeyPress={this.props.openmarker.bind(this, listItem.marker)}
+                  onClick={this.props.openmarker.bind(this, listItem.marker)}
                 >{listItem.fullName}</li>
             );
         }, this);
@@ -64,7 +64,6 @@ class Menu extends Component {
               <div className="button" onClick={this.toggleSuggestions}>
                 <h1 className='app-title'> Visit Cabot! </h1>
                 <small>Click to {!this.state.showMenu ? 'see' : 'hide' } Suggestions!</small>
-                <hr />
               </div>
                 <input
                   role="search"
