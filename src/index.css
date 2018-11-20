@@ -21,7 +21,7 @@ small {
   max-width: 200px;
 }
 
-.search {
+.search-menu {
     z-index: 1;
     position: fixed;
     top: 5px;
@@ -31,7 +31,7 @@ small {
     width:320px;
 }
 
-.search>input {
+.search-menu>input {
     width: 80%;
     padding: 5px;
     margin:8px;
@@ -65,7 +65,7 @@ ul {
 }
 
 @media only screen and (max-width: 749px) {
-  .search {
+  .search-menu {
       position: fixed;
       top: 0px;
       left: 0px;

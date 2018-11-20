@@ -4,8 +4,8 @@ class Menu extends Component {
     constructor(props) {
       super(props);
       this.state = {
-        'cabotPlaces': '',
-        'query': '',
+        'cabotPlaces': [],
+        'inputVal': '',
         'showMenu': false,
       };
       // so we dont lose context
@@ -25,24 +25,25 @@ class Menu extends Component {
     // filters the list of suggestions
     filterLocations(event) {
       this.props.minimizeMarker();
-      const {value} = event.target;
-      let cabotPlaces = [];
-        // loop through elements and set visibility if they match the query
-        this.props.cabotPlaces.forEach((location) => {
-            if (location.fullName.toLowerCase().indexOf(value.toLowerCase()) >= 0) {
-                location.marker.setVisible(true);
-                cabotPlaces.push(location);
-            } else {
-                location.marker.setVisible(false);
-            }
-        });
-
-        this.setState({
-          'cabotPlaces': cabotPlaces,
-          'query': value
-        });
+      let input = document.getElementById('search-input');
+      let inputVal = input.value;
+      let inputString = inputVal.toUpperCase();
+      let filteredPlaces = [];
+      // loop through elements and set visibility if they match the input
+      // inspired by w3c https://www.w3schools.com/howto/howto_js_filter_lists.asp
+      this.props.cabotPlaces.forEach((location) => {
+        if (location.fullName.toUpperCase().indexOf(inputString) > -1) {
+          location.marker.setVisible(true);
+          filteredPlaces.push(location);
+        } else {
+          location.marker.setVisible(false);
+        }
+      });
+      this.setState({
+        'cabotPlaces': filteredPlaces,
+        'inputVal': inputVal
+      });
     }
-
     render() {
         let locationlist = this.state.cabotPlaces.map((listItem, index) => {
             return (
@@ -59,7 +60,7 @@ class Menu extends Component {
         }, this);
 
         return (
-            <div className="search">
+            <div className="search-menu">
               <div className="button" onClick={this.toggleSuggestions}>
                 <h1 className='app-title'> Visit Cabot! </h1>
                 <small>Click to {!this.state.showMenu ? 'see' : 'hide' } Suggestions!</small>
@@ -67,14 +68,14 @@ class Menu extends Component {
               </div>
                 <input
                   role="search"
-                  aria-labelledby="filter"
+                  aria-labelledby="Search"
                   id="search-input"
                   type="text"
                   placeholder="Search Suggestions"
-                  value={this.state.query}
+                  value={this.state.inputVal}
                   onChange={this.filterLocations}
                 />
-                <ul>
+                <ul className="locations-list">
                     {this.state.showMenu && locationlist}
                 </ul>
             </div>
