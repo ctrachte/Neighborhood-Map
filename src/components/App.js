@@ -161,6 +161,7 @@ class App extends Component {
   displayMarker(marker) {
     let self = this;
     let locationInfo = [];
+    // find the corresponding location in the state
     this.state.cabotPlaces.forEach((place) => {
       if (place.id === marker.id) {
         locationInfo.push(place);
@@ -168,6 +169,7 @@ class App extends Component {
       }
     });
     locationInfo = locationInfo[0];
+    // set the marker window information from the state
     if (!locationInfo.getDetailsError){
       let heading = '<h2 class="location-text">' + locationInfo.name + '</h2>';
       let rating = '<span class="location-text">' + locationInfo.rating + '</span><hr/>';
