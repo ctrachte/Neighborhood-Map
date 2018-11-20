@@ -19,6 +19,9 @@ ul {
   overflow: auto;
   border-radius: 2px;
 }
+li:active {
+  border-style: none !important;
+}
 
 .app-title {
   text-align: center;
@@ -44,11 +47,14 @@ ul {
   padding: 5px;
   margin:8px;
 }
-.box {
+.list-item {
   cursor: pointer;
   padding: 5px;
 }
-.box:hover {
+.list-item:active {
+  border:none;
+}
+.list-item:hover {
   background-color: #AA3939;
   border:none;
   color: white;
@@ -66,7 +72,11 @@ ul {
     top: 0px;
     left: 0px;
     width:100%;
-    border-radius: none;
+    border-radius: 0;
+  }
+  .locations-list {
+    border-top: solid grey;
+    border-bottom: solid 2px grey;
   }
   .app-title {
     text-align: center;
@@ -74,9 +84,12 @@ ul {
     color: #AA3939;
     width:100%;
   }
+  .list-item {
+    padding: 2px;
+  }
   ul {
     max-height: 100px;
-    border-radius: none;
+    border-radius: 0;
     overflow-y: scroll;
   }
 }
