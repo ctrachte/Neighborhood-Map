@@ -13,7 +13,7 @@ To run this app for development:
 * in your terminal use the command `git clone https://github.com/ctrachte/Neighborhood-Map.git`
 * in the directory you cloned to, install all project dependencies with `npm install`
 * get your own API keys from [FourSquare](https://developer.foursquare.com/docs/api/configuration/authentication) and [Google Maps](https://developers.google.com/maps/documentation/javascript/get-api-key)
-* insert your maps key into `public/index.html`, and your FourSquare key/secret into the App.js file at the top.
+* replace the maps key in `public/index.html`, and the FourSquare key/secret in the App.js file at the top with your keys.
 * start the development server with `npm start`
 
 **NOTE:** *By default, service workers will only cache data when in production mode.*
