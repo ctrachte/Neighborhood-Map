@@ -19,7 +19,7 @@ class App extends Component {
 
         // keep context when invoking functions
         this.initMap = this.initMap.bind(this);
-        this.openInfoWindow = this.openInfoWindow.bind(this);
+        this.openMarker = this.openMarker.bind(this);
         this.minimizeMarker = this.minimizeMarker.bind(this);
     }
     componentWillMount() {
@@ -34,44 +34,39 @@ class App extends Component {
     // most of this init function is based on the Udacity google maps API course example
     initMap() {
         let self = this;
-
-        let mapview = document.getElementById('map');
-        mapview.style.height = window.innerHeight + "px";
-        let map = new window.google.maps.Map(mapview, {
-            center: {lat: 34.963541, lng: -92.022440}, // the center of Cabot, Ar
-            zoom: 13,
-            mapTypeControl: false,
-            fullscreenControl: false
+        let view = document.getElementById('map');
+        view.style.height = window.innerHeight + "px";
+        let map = new window.google.maps.Map(view, {
+          zoom: 13,
+          mapTypeControl: false,
+          fullscreenControl: false,
+          center: {lat: 34.963541, lng: -92.022440} // the center of Cabot, Ar
         });
-
         let InfoWindow = new window.google.maps.InfoWindow({});
-
+        //if the user clicks the "x" on the marker:
         window.google.maps.event.addListener(InfoWindow, 'closeclick', function () {
-            self.minimizeMarker();
+          self.minimizeMarker();
         });
-
         this.setState({
-            'map': map,
-            'infowindow': InfoWindow
+          'map': map,
+          'infowindow': InfoWindow
         });
         // make the map responsive if screen size changes
         window.google.maps.event.addDomListener(window, "resize", function () {
-            let center = map.getCenter();
-            window.google.maps.event.trigger(map, "resize");
-            self.state.map.setCenter(center);
+          let center = map.getCenter();
+          window.google.maps.event.trigger(map, "resize");
+          self.state.map.setCenter(center);
         });
         // if the user clicks somewhere on the map, close the info marker
         window.google.maps.event.addListener(map, 'click', function () {
-            self.minimizeMarker();
+          self.minimizeMarker();
         });
-        this.getLocationInfo();
+        this.getAllLocationsInfo();
     }
 
-    openInfoWindow(marker) {
+    openMarker(marker) {
         //close any existing markers
         this.minimizeMarker();
-        //open the marker window on the map
-        this.state.infowindow.open(this.state.map, marker);
         //animate the icon of the marker
         marker.setAnimation(window.google.maps.Animation.BOUNCE);
         this.setState({
@@ -82,28 +77,20 @@ class App extends Component {
         //center the map over the selected icon
         this.state.map.setCenter(marker.getPosition());
         //offset the screen so the menu doesnt hide the marker
-        this.state.map.panBy(0, -250);
+        this.state.map.panBy(0, -230);
         // now show the marker info
         this.displayMarker(marker);
+        //open the marker window on the map
+        this.state.infowindow.open(this.state.map, marker);
     }
     // get additional info for each location based on API information
-    getLocationInfo () {
+    getAllLocationsInfo () {
       let self = this;
       const limit = "&limit=1";
       let newLocationsInfo = [];
       this.state.cabotPlaces.forEach((place) => {
         let fullName = place.name + ' - ' + place.description;
-        let marker = new window.google.maps.Marker({
-          animation: window.google.maps.Animation.DROP,
-          position: new window.google.maps.LatLng(place.latitude, place.longitude),
-          map: this.state.map
-        });
-        marker.addListener('click', function () {
-            self.openInfoWindow(marker);
-        });
         place.fullName = fullName;
-        place.marker = marker;
-        place.marker.id = place.id;
         place.display = true;
         let lat = place.latitude;
         let long = place.longitude;
@@ -115,7 +102,17 @@ class App extends Component {
           } else {
             res.json().then((data) => {
               place.id = data.response.venues[0].id;
-              this.setVenueDetails(place, newLocationsInfo);
+              let marker = new window.google.maps.Marker({
+                animation: window.google.maps.Animation.DROP,
+                position: new window.google.maps.LatLng(place.latitude, place.longitude),
+                map: this.state.map,
+                id:data.response.venues[0].id
+              });
+              marker.addListener('click', function () {
+                  self.openMarker(marker);
+              });
+              place.marker = marker;
+              this.getVenueDetails(place, newLocationsInfo);
             })
           }
         })
@@ -128,9 +125,10 @@ class App extends Component {
       this.setState({
         cabotPlaces: newLocationsInfo
       });
+      // console.log(this.state.cabotPlaces);
     }
 
-    setVenueDetails (place, newLocationsInfo) {
+    getVenueDetails (place, newLocationsInfo) {
       let url = 'https://api.foursquare.com/v2/venues/' + place.id + '?' + fourSquareClientId + fourSquareClientSecret + fourSquareVersion;
         fetch(url).then((res) => {
           if (res.status !== 200) {
@@ -138,11 +136,13 @@ class App extends Component {
             newLocationsInfo.push(place);
           } else {
             res.json().then((data) => {
-              console.log(place.name, data);
+              // console.log(place.name, data);
               data = data.response.venue;
-              place.img = data.bestPhoto.source.prefix + data.bestPhoto.source.suffix;
+              if (data.bestPhoto) {
+                place.img = data.bestPhoto.prefix + "100x100" + data.bestPhoto.suffix;
+              }
               place.hereNow = data.hereNow.summary;
-              place.rating = data.likes.summary + ", " + data.rating + " stars.";
+              place.rating = (data.likes.summary ? data.likes.summary  + ", " : "No likes, ") + (data.rating ? data.rating + "/10 stars." : "No stars.") ;
               place.url = data.shortUrl;
               newLocationsInfo.push(place);
             })
@@ -157,20 +157,25 @@ class App extends Component {
 
 
     displayMarker(marker) {
-      //set the marker, and url to request info
       let self = this;
-      let locationInfo = this.state.cabotPlaces.filter(place => place.id === marker.id);
-      if (!locationInfo.getIdError && marker.id){
+      let locationInfo = [];
+      this.state.cabotPlaces.forEach((place) => {
+        if (place.id === marker.id) {
+          locationInfo.push(place);
+          // console.log(locationInfo);
+        }
+      });
+      locationInfo = locationInfo[0];
+      if (!locationInfo.getIdError){
         let heading = '<h2 class="location-text">' + locationInfo.name + '</h2>';
         let rating = '<span class="location-text">' + locationInfo.rating + '</span><hr/>';
-        let img = '<img src="' + locationInfo.img + '" width=100 alt="' + locationInfo.name + 'picture" /><br>';
+        let img = locationInfo.img ? '<img src="' + locationInfo.img + '"alt="' + locationInfo.name + '\'s most popular photo" /><br>' : '<span> No Image for this Venue </span><br>';
         let hereNow = '<b>Current Visitors: </b>' + locationInfo.hereNow + '<hr/>';
         let fourSquareLink = '<a href="https://foursquare.com/v/'+ locationInfo.url +'" target="_blank">Check it out on FourSquare!</a> '
-        self.state.infowindow.setContent(heading + rating + hereNow + img + fourSquareLink);
+        self.state.infowindow.setContent(heading + img + rating + hereNow + fourSquareLink);
       } else {
         self.state.infowindow.setContent("We were unable to retrieve details of this location.");
       }
-
     }
 
     minimizeMarker() {
@@ -192,7 +197,7 @@ class App extends Component {
         <Menu
           key="100"
           cabotPlaces={this.state.cabotPlaces}
-          openInfoWindow={this.openInfoWindow}
+          openMarker={this.openMarker}
           minimizeMarker={this.minimizeMarker}
         />
         <div id="map"></div>

@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import MarkerWindow from './MarkerWindow';
 
 class Menu extends Component {
     constructor(props) {
@@ -13,7 +12,11 @@ class Menu extends Component {
         this.filterLocations = this.filterLocations.bind(this);
         this.toggleSuggestions = this.toggleSuggestions.bind(this);
     }
-
+    componentWillMount() {
+      this.setState({
+        'locations': this.props.cabotPlaces
+      });
+    }
     // filters the list of suggestions
     filterLocations(event) {
         this.props.minimizeMarker();
@@ -35,11 +38,7 @@ class Menu extends Component {
         });
     }
 
-    componentWillMount() {
-        this.setState({
-            'locations': this.props.cabotPlaces
-        });
-    }
+
 
     toggleSuggestions() {
         this.setState({
@@ -50,7 +49,15 @@ class Menu extends Component {
     render() {
         let locationlist = this.state.locations.map((listItem, index) => {
             return (
-                <MarkerWindow key={index} openInfoWindow={this.props.openInfoWindow.bind(this)} data={listItem}/>
+                <li
+                  openMarker={this.props.openMarker.bind(this)}
+                  key={index}
+                  role="button"
+                  className="box"
+                  tabIndex="0"
+                  onKeyPress={this.props.openMarker.bind(this, listItem.marker)}
+                  onClick={this.props.openMarker.bind(this, listItem.marker)}
+                >{listItem.fullName}</li>
             );
         }, this);
 
